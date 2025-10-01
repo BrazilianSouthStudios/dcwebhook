@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Painel de Webhook Discord</title>
+  <style>
+    body {
+      background-color: #1e1e2f;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      padding: 40px;
+      max-width: 800px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+      color: #00bcd4;
+    }
+    input, textarea, button, select {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+    input, textarea, select {
+      background-color: #2c2c3c;
+      color: #fff;
+    }
+    button {
+      background-color: #00bcd4;
+      color: #000;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    button:hover {
+      background-color: #00a5b3;
+    }
+    .flex {
+      display: flex;
+      gap: 10px;
+    }
+    .flex input {
+      flex: 1;
+    }
+    .small {
+      font-size: 12px;
+      color: #ccc;
+      text-align: right;
+    }
+    .canal-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #2c2c3c;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin: 5px 0;
+    }
+    .canal-item button {
+      background-color: red;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .canal-item button:hover {
+      background-color: darkred;
+    }
+  </style>
+</head>
+<body>
+  <h1>📡 Painel de Webhook Discord</h1>
+
+  <h3>🔗 Adicionar Canal</h3>
+  <div class="flex">
+    <input type="text" id="canalNome" placeholder="Nome (ex: Brazilian South Studios)">
+    <input type="text" id="canalWebhook" placeholder="URL do Webhook do canal">
+  </div>
+  <button onclick="adicionarCanal()">Adicionar Webhook</button>
+
+  <div id="canaisSalvos"></div>
+
+  <h3>📨 Enviar Mensagem</h3>
+  <label>Escolher webhook:</label>
+  <select id="listaCanais"></select>
+
+  <label>Nome do Bot (opcional):</label>
+  <input type="text" id="username" placeholder="Bot da Firma">
+
+  <label>URL do Avatar (opcional):</label>
+  <input type="text" id="avatar" placeholder="https://i.imgur.com/avatar.png">
+
+  <label>Mensagem:</label>
+  <textarea id="mensagem" rows="4" placeholder="Escreva aqui sua mensagem..."></textarea>
+
+  <label>Arquivo/Imagem (opcional):</label>
+  <input type="file" id="arquivo" accept="image/*,video/*,.txt,.pdf,.zip,.rar,.7z,.docx,.xlsx">
+
+  <button onclick="enviar()">Enviar Mensagem</button>
+
+  <div class="small">Feito com 💙 no Paraná</div>
+
+  <script>
+    let canais = JSON.parse(localStorage.getItem("webhookCanais")) || [];
+
+    function salvarCanais() {
+      localStorage.setItem("webhookCanais", JSON.stringify(canais));
+    }
+
+    function atualizarLista() {
+      const select = document.getElementById("listaCanais");
+      const divCanais = document.getElementById("canaisSalvos");
+      select.innerHTML = "";
+      divCanais.innerHTML = "";
+
+      canais.forEach((canal, i) => {
+        // Preencher dropdown
+        const opt = document.createElement("option");
+        opt.value = i;
+        opt.textContent = canal.nome;
+        select.appendChild(opt);
+
+        // Mostrar canal salvo com botão de remover
+        const item = document.createElement("div");
+        item.className = "canal-item";
+        item.innerHTML = `
+          <span>${canal.nome}</span>
+          <button onclick="removerCanal(${i})">Remover</button>
+        `;
+        divCanais.appendChild(item);
+      });
+    }
+
+    function adicionarCanal() {
+      const nome = document.getElementById("canalNome").value;
+      const webhook = document.getElementById("canalWebhook").value;
+
+      if (!nome || !webhook) {
+        alert("Preenche os dois campos, piá!");
+        return;
+      }
+
+      canais.push({ nome, webhook });
+      salvarCanais();
+      atualizarLista();
+
+      document.getElementById("canalNome").value = "";
+      document.getElementById("canalWebhook").value = "";
+    }
+
+    function removerCanal(index) {
+      if (confirm("Tem certeza que quer remover esse canal?")) {
+        canais.splice(index, 1);
+        salvarCanais();
+        atualizarLista();
+      }
+    }
+
+    function enviar() {
+      const canalIndex = document.getElementById("listaCanais").value;
+      const webhook = canais[canalIndex]?.webhook;
+      const username = document.getElementById("username").value;
+      const avatar = document.getElementById("avatar").value;
+      const mensagem = document.getElementById("mensagem").value;
+      const arquivo = document.getElementById("arquivo").files[0];
+
+      if (!webhook || (!mensagem && !arquivo)) {
+        alert("Tem que escrever uma mensagem ou anexar um arquivo!");
+        return;
+      }
+
+      const form = new FormData();
+      if (mensagem) form.append("content", mensagem);
+      if (username) form.append("username", username);
+      if (avatar) form.append("avatar_url", avatar);
+      if (arquivo) form.append("file", arquivo);
+
+      fetch(webhook, {
+        method: "POST",
+        body: form
+      }).then(res => {
+        if (res.ok) {
+          alert("Mensagem enviada com sucesso! 🚀");
+          document.getElementById("mensagem").value = "";
+          document.getElementById("arquivo").value = "";
+        } else {
+          alert("Erro ao enviar. Será que o webhook tá certo?");
+        }
+      });
+    }
+
+    atualizarLista();
+  </script>
+</body>
+</html>
